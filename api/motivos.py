@@ -1,6 +1,7 @@
+import json
 import fastapi
-from sqlalchemy.orm import Session
 from fastapi import Request
+from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from utils import utils
 
@@ -14,35 +15,33 @@ async def obtener_motivos():
   try:
     with Session(engine) as session:
       rows = session.execute(text("SELECT * FROM motivo ORDER BY nombre_motivo")).fetchall()
-
       # Convert the rows to a JSON object
       motivos = utils.motivos_from_rows(rows)
-
       return {"error": "N", "mensaje": "", "objetos": motivos}
-
   except Exception as e:
       return {"error": "S", "mensaje": str(e)}  
-    
+
 @router.delete("/eliminar_motivo/{id_motivo}")
 async def eliminar_motivo(id_motivo: int):
   try:
     with Session(engine) as session:
-      query = f"DELETE FROM motivo WHERE id_motivo={id_motivo}"
-      print(query)
-      rows = session.execute(text(f"DELETE FROM motivo WHERE id_motivo={id_motivo}")).fetchall()
-      return {"error": "N", "mensaje": "", "objetos": rows}
+      query = text("DELETE FROM motivo WHERE id_motivo = :id_motivo")
+      session.execute(query, {"id_motivo": id_motivo})
+      session.commit()
+      return {"error": "N", "mensaje": f"La fila con id: {id_motivo} se ha eliminado."}
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}  
-    
-# DELETE FROM motivo WHERE id_motivo='${id_motivo}'
-    
-# @router.post("/crear_motivo")   
-# async def crear_motivo(request: Request):
-#   motivo = await request.body()
-#   try:
-#     with Session(engine) as session:
-#       rows = session.execute(text(f"INSERT INTO motivo (nombre_motivo) VALUES('{motivo.nombre_motivo}') RETURNING id_motivo")).fetchall()
-#       return {"error": "N", "mensaje": "", "objetos": rows}
 
-#   except Exception as e:
-#       return {"error": "S", "mensaje": str(e)}  
+@router.post("/crear_motivo")
+async def crear_motivo(request: Request):
+  motivo_str = await request.body()
+  motivo = json.loads(motivo_str)
+  try:
+    with Session(engine) as session:
+      sql = f"INSERT INTO motivo (nombre_motivo) VALUES('{motivo['nombre_motivo']}') RETURNING id_motivo" if motivo['id_motivo'] == 0 else f"UPDATE motivo SET nombre_motivo='{motivo['nombre_motivo']}' WHERE id_motivo='{motivo['id_motivo']}' RETURNING id_motivo"
+      rows = session.execute(text(sql)).fetchall()
+      session.commit()
+      return {"error": "N", "mensaje": "", "objetos": rows}
+  except Exception as e:
+    return {"error": "S", "mensaje": str(e)}
+
