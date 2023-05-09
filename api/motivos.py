@@ -3,7 +3,6 @@ import fastapi
 from fastapi import Request
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
-from utils import utils
 
 router = fastapi.APIRouter()
 
@@ -15,9 +14,7 @@ async def obtener_motivos():
   try:
     with Session(engine) as session:
       rows = session.execute(text("SELECT * FROM motivo ORDER BY nombre_motivo")).fetchall()
-      # Convert the rows to a JSON object
-      motivos = utils.motivos_from_rows(rows)
-      return {"error": "N", "mensaje": "", "objetos": motivos}
+      return {"error": "N", "mensaje": "", "objetos": rows}  
   except Exception as e:
       return {"error": "S", "mensaje": str(e)}  
 
@@ -44,4 +41,3 @@ async def crear_motivo(request: Request):
       return {"error": "N", "mensaje": "", "objetos": rows}
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}
-

@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "fastapi-reclamos"
+version = "0.1.0"
+description = "RESTful API for reclamos app"
+authors = ["dfcarrera79 <dfcarrera@outlook.com>"]
+readme = "README.md"
+packages = [{include = "fastapi_reclamos"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.95.1"
+uvicorn = "^0.22.0"
+sqlalchemy = "^2.0.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
