@@ -24,8 +24,8 @@ async def obtener_factura(ruc_cliente: str, numero_factura: str):
     return {"error": "S", "mensaje": str(e)}  
 
 @router.get("/obtener_productos") 
-async def obtener_productos(ruc_reclamante: str, numero_factura: str):
-  respuesta = await obtener_factura(ruc_reclamante, numero_factura)
+async def obtener_productos(ruc_reclamante: str, no_factura: str):
+  respuesta = await obtener_factura(ruc_reclamante, no_factura)
   if respuesta["error"] == "S":
     return JSONResponse(respuesta)
   factura = respuesta['objetos']
