@@ -55,22 +55,6 @@ async def subir_archivo(file: UploadFile = File(...)):
         })
   except Exception as e:
     return JSONResponse({"error": "S", "mensaje": str(e)})
-  
-# @router.post("/subir_foto")
-# async def subir_foto(file: UploadFile = File(...)):
-# 	with open(file.filename, "wb") as buffer:
-# 		shutil.copyfileobj(file.file, buffer)
-
-# 	# Open the image file
-# 	with Image.open(file.filename) as im:
-# 		# Save the image in webp format with the same name
-# 		webp_path = os.path.splitext(file.filename)[0] + ".webp"
-# 		im.save(webp_path, "webp")
-			
-# 	# Delete the original file
-# 	os.remove(file.filename)
-	
-# 	return {"filename": os.path.basename(webp_path)}
 
 @router.post("/registrar_archivo")
 async def registrar_archivo(data: RegistrarModel):
@@ -131,3 +115,19 @@ async def obtener_archivos(id_archivo):
       return {"error": "N", "mensaje": "", "objetos": rows}
   except Exception as e:
       return {"error": "S", "mensaje": str(e)}  
+    
+# @router.post("/subir_foto")
+# async def subir_foto(file: UploadFile = File(...)):
+# 	with open(file.filename, "wb") as buffer:
+# 		shutil.copyfileobj(file.file, buffer)
+
+# 	# Open the image file
+# 	with Image.open(file.filename) as im:
+# 		# Save the image in webp format with the same name
+# 		webp_path = os.path.splitext(file.filename)[0] + ".webp"
+# 		im.save(webp_path, "webp")
+			
+# 	# Delete the original file
+# 	os.remove(file.filename)
+	
+# 	return {"filename": os.path.basename(webp_path)}    
