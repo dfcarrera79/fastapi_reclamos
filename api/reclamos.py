@@ -4,7 +4,8 @@ from datetime import date
 from fastapi import Request
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
+from sqlalchemy.sql import text 
 
 router = fastapi.APIRouter()
 
@@ -41,9 +42,10 @@ async def obtener_productos(ruc_reclamante: str, no_factura: str):
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}  
   
-@router.post("detalle_reclamo")  
+@router.post("/detalle_reclamo")  
 async def detalle_reclamo(id_reclamo, tipo, reclamos, ruc_reclamante, razon_social):
   sql = f"INSERT INTO detalle_reclamo VALUES(DEFAULT, '{id_reclamo}', '{tipo}', '{reclamos}', current_timestamp, '{ruc_reclamante}', '{razon_social}') RETURNING id_detalle" 
+  print('[SQL Query]: ', sql)
   try:
     with Session(engine1) as session:
       rows = session.execute(text(sql)).fetchall()
@@ -55,38 +57,62 @@ async def detalle_reclamo(id_reclamo, tipo, reclamos, ruc_reclamante, razon_soci
       })
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}  
+
+@router.post("/insertar_detalle")
+def insertar_detalle(id_reclamo, detalle, razon_social):
+  # detalle_values = json.dumps(detalle['reclamos'])
+  sql = "INSERT INTO detalle_reclamo VALUES(DEFAULT, :id_reclamo, :tipo, :detalle_values, current_timestamp, :ruc_reclamante, :razon_social) RETURNING id_detalle"
+  try:
+    with Session(engine1) as session:
+      rows = session.execute(text(sql), {
+        'id_reclamo': id_reclamo,
+        'tipo': detalle['tipo'],
+        'detalle_values': detalle['reclamos'],
+        'ruc_reclamante': detalle['ruc_reclamante'],
+        'razon_social': razon_social
+      }).fetchall()
+      session.commit()
+      rows_response = rows[0]
+      print('[ROWS RESPONSE]: ', rows_response)
+      return JSONResponse(content={
+        "error": "N",
+        "mensaje": "Reclamo agregado exitosamente",
+        "objetos": rows_response['id_detalle'],
+      })
+  except Exception as e:
+    return {"error": "S", "mensaje": str(e)}
   
 @router.post("/crear_detalle")
 async def crear_detalle(request: Request):
   detalle_str = await request.body()
-  detalle = json.loads(detalle_str)    
+  detalle = json.loads(detalle_str)
   respuesta = await obtener_factura(detalle["ruc_reclamante"], detalle["no_factura"])
   if respuesta['error'] == "S":
-    return JSONResponse(respuesta)
+    return JSONResponse(content=respuesta)
   factura = respuesta['objetos']
+
   sql = f"INSERT INTO reclamo (no_factura, fecha_reclamo, fecha_factura, ruc_cliente, razon_social, nombre_comercial, direccion, ciudad, telefonos, email, trn_codigo) VALUES('{factura['no_factura']}', current_timestamp, '{factura['fecha_factura']}', '{factura['ruc_cliente']}', '{factura['razon_social']}', '{factura['nombre_comercial']}', '{factura['direccion']}', '{factura['ciudad']}', '{factura['telefonos']}', '{factura['email']}', '{factura['trn_codigo']}') ON CONFLICT ON CONSTRAINT reclamo_unico DO UPDATE SET no_factura=EXCLUDED.no_factura RETURNING id_reclamo, estado, razon_social"
+
   try:
     with Session(engine1) as session:
       rows = session.execute(text(sql)).fetchall()
       session.commit()
       rows_response = rows[0]
       id_reclamo, estado, razon_social = rows_response['id_reclamo'], rows_response['estado'], rows_response['razon_social']
+      
+      print('[ID RECLAMO]: ', id_reclamo)
+      print('[ESTADO]: ', estado)
+      print('[RAZON SOCIAL]: ', razon_social)
+      
       if estado == 'FIN':
-        return JSONResponse({
+        return JSONResponse(content={
           'error': 'S',
           'mensaje': 'El reclamo ya está finalizado, no es posible agregar detalles',
           'objetos': {'id_reclamo': id_reclamo, 'estado': estado, 'razon_social': razon_social}
         })
-      new_sql = f"INSERT INTO detalle_reclamo VALUES(DEFAULT, '{id_reclamo}', '{detalle['tipo']}', '{json.dumps(detalle['reclamos'])}', current_timestamp, '{detalle['ruc_reclamante']}', '{razon_social}') RETURNING id_detalle" 
-      new_rows = session.execute(text(new_sql)).fetchall()
-      session.commit()
-      new_rows_response = new_rows[0]
-      return JSONResponse({ "error": "N",
-        "mensaje": "Reclamo agregado exitosamente",
-        "objetos": new_rows_response['id_detalle'],
-      })
+      return insertar_detalle(id_reclamo, detalle, razon_social)   
   except Exception as e:
-    return {"error": "S", "mensaje": str(e)}    
+      return {"error": "S", "mensaje": str(e)}
 
 @router.get("/reclamos_por_ruc/{ruc}")
 async def reclamos_por_ruc(
