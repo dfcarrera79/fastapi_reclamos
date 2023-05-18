@@ -6,6 +6,7 @@ from api import motivos, reclamos, archivos, estados, usuarios
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="public/imagenes_reclamos"), name="static")
 
+# API endpoints
 app.include_router(motivos.router)
 app.include_router(reclamos.router)
 app.include_router(archivos.router)

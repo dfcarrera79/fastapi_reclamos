@@ -4,10 +4,12 @@ from fastapi import Request
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 
-router = fastapi.APIRouter()
-
+# Establish connections to PostgreSQL databases for "reclamos"
 db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
 engine = create_engine(db_uri)
+
+# API Route Definitions
+router = fastapi.APIRouter()
 
 @router.get("/obtener_motivos")
 async def obtener_motivos():

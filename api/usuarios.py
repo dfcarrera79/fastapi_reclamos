@@ -4,13 +4,15 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from utils import utils
 
-router = fastapi.APIRouter()
-
+# Establish connections to PostgreSQL databases for "reclamos" and "apromed" respectively
 db_uri1 = "postgresql://postgres:01061979@localhost:5432/reclamos"
 engine1 = create_engine(db_uri1)
 
 db_uri2 = "postgresql://postgres:01061979@localhost:5432/apromed"
 engine2 = create_engine(db_uri2)
+
+# API Route Definitions
+router = fastapi.APIRouter()
 
 @router.get("/validar_usuario")
 async def validar_usuario(id: str, clave: str, appCodigo: int):
@@ -27,19 +29,14 @@ async def validar_cliente(id: str, clave: str):
   try:
     with Session(engine1) as session:
       rows = session.execute(text(sql)).fetchall()
-      print('[ROWS]: ', len(rows) == 0)
       if len(rows) == 0:
         respuesta = cliente_sistema(id)
         if respuesta["error"] == "S":
           return respuesta
         usuario = respuesta["objetos"]
-        # usuario["clave"] = utils.codify(usuario["id"])
-        # respuesta = await crearUsuario(pool, usuario)
         return usuario
       else:
         clienteApp = rows[0]
-        print('[clienteApp]: ', clienteApp["clave"])
-        print('[CLAVE CODIFICADA]: ', utils.codify(clave))
         if clienteApp["clave"] == utils.codify(clave):
           return {"error": "N", "mensaje": "", "objetos": clienteApp}
         else:
@@ -74,11 +71,9 @@ async def cliente_sistema(id: str):
 @router.get("/usuario_sistema")  
 async def usuario_sistema(id: str, clave: str):
   sql = f"SELECT usu_login AS ruc_cliente, usu_nomape AS razon_social, usu_nomape AS nombre_comercial, usu_clave AS clave FROM usuario.TUsuario WHERE TRIM(usu_login) LIKE '{id.strip()}'"
-  print('[SQL]: ', sql)
   try:
     with Session(engine2) as session:
       rows = session.execute(text(sql)).fetchall()
-      print('[ROWS]: ', rows)
       if len(rows) == 0:
         return {
           "error": "S",

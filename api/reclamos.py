@@ -7,13 +7,16 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine
 from sqlalchemy.sql import text 
 
-router = fastapi.APIRouter()
 
+# Establish connections to PostgreSQL databases for "reclamos" and "apromed" respectively
 db_uri1 = "postgresql://postgres:01061979@localhost:5432/reclamos"
 engine1 = create_engine(db_uri1)
 
 db_uri2 = "postgresql://postgres:01061979@localhost:5432/apromed"
 engine2 = create_engine(db_uri2)
+
+# API Route Definitions
+router = fastapi.APIRouter()
 
 @router.get("/obtener_factura") 
 async def obtener_factura(ruc_cliente: str, numero_factura: str):
@@ -59,7 +62,6 @@ async def detalle_reclamo(id_reclamo, tipo, reclamos, ruc_reclamante, razon_soci
 
 @router.post("/insertar_detalle")
 def insertar_detalle(id_reclamo, detalle, razon_social):
-  # detalle_values = json.dumps(detalle['reclamos'])
   sql = "INSERT INTO detalle_reclamo VALUES(DEFAULT, :id_reclamo, :tipo, :detalle_values, current_timestamp, :ruc_reclamante, :razon_social) RETURNING id_detalle"
   try:
     with Session(engine1) as session:

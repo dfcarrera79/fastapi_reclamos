@@ -21,12 +21,13 @@ class ArchivosModel(BaseModel):
 class RegistrarModel(BaseModel):
   filepath: str
 
-router = fastapi.APIRouter()
-
+# Establish connections to PostgreSQL databases for "reclamos"
 db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
 engine = create_engine(db_uri)
 
-## Request
+# API Route Definitions
+router = fastapi.APIRouter()
+
 @router.post("/subir_archivo")
 async def subir_archivo(file: UploadFile = File(...)):
   directorio = os.path.join(os.getcwd(), 'public', 'imagenes_reclamos')
@@ -56,6 +57,7 @@ async def subir_archivo(file: UploadFile = File(...)):
   except Exception as e:
     return JSONResponse({"error": "S", "mensaje": str(e)})
 
+
 @router.post("/registrar_archivo")
 async def registrar_archivo(data: RegistrarModel):
   filepath = data.filepath
@@ -83,8 +85,6 @@ async def actualizar_archivos(data: ArchivosModel):
   id_detalle = data.id_detalle
   id_archivo = data.id_archivo
   sql = f"UPDATE archivo SET id_detalle = '{id_detalle}' WHERE id_archivo = '{id_archivo}'"
-  print(sql)
-  
   try:
     with Session(engine) as session:
       session.execute(text(sql))
@@ -98,7 +98,6 @@ async def actualizar_archivo(data: ArchivoModel):
   id_detalle = data.id_detalle
   filepath = data.filepath
   sql = f"INSERT INTO archivo (id_detalle, path) VALUES({id_detalle}, '{filepath}')"
-  print('[SQL ARCHIVOS]: ', sql)
   try:
     with Session(engine) as session:
       session.execute(text(sql))
@@ -116,18 +115,3 @@ async def obtener_archivos(id_archivo):
   except Exception as e:
       return {"error": "S", "mensaje": str(e)}  
     
-# @router.post("/subir_foto")
-# async def subir_foto(file: UploadFile = File(...)):
-# 	with open(file.filename, "wb") as buffer:
-# 		shutil.copyfileobj(file.file, buffer)
-
-# 	# Open the image file
-# 	with Image.open(file.filename) as im:
-# 		# Save the image in webp format with the same name
-# 		webp_path = os.path.splitext(file.filename)[0] + ".webp"
-# 		im.save(webp_path, "webp")
-			
-# 	# Delete the original file
-# 	os.remove(file.filename)
-	
-# 	return {"filename": os.path.basename(webp_path)}    
