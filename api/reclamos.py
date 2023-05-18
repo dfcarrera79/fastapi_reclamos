@@ -125,8 +125,6 @@ async def reclamos_por_ruc(
   if desde not in [None, ''] and hasta not in [None, '']:
     sql += f" AND reclamo.fecha_reclamo BETWEEN '{desde}' AND '{hasta}'"
   sql += " ORDER BY id_reclamo"
-  
-  print('[SQL]: ', sql)
 
   try:
     with Session(engine1) as session:
