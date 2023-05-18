@@ -45,7 +45,6 @@ async def obtener_productos(ruc_reclamante: str, no_factura: str):
 @router.post("/detalle_reclamo")  
 async def detalle_reclamo(id_reclamo, tipo, reclamos, ruc_reclamante, razon_social):
   sql = f"INSERT INTO detalle_reclamo VALUES(DEFAULT, '{id_reclamo}', '{tipo}', '{reclamos}', current_timestamp, '{ruc_reclamante}', '{razon_social}') RETURNING id_detalle" 
-  print('[SQL Query]: ', sql)
   try:
     with Session(engine1) as session:
       rows = session.execute(text(sql)).fetchall()
@@ -73,7 +72,6 @@ def insertar_detalle(id_reclamo, detalle, razon_social):
       }).fetchall()
       session.commit()
       rows_response = rows[0]
-      print('[ROWS RESPONSE]: ', rows_response)
       return JSONResponse(content={
         "error": "N",
         "mensaje": "Reclamo agregado exitosamente",
@@ -100,10 +98,6 @@ async def crear_detalle(request: Request):
       rows_response = rows[0]
       id_reclamo, estado, razon_social = rows_response['id_reclamo'], rows_response['estado'], rows_response['razon_social']
       
-      print('[ID RECLAMO]: ', id_reclamo)
-      print('[ESTADO]: ', estado)
-      print('[RAZON SOCIAL]: ', razon_social)
-      
       if estado == 'FIN':
         return JSONResponse(content={
           'error': 'S',
@@ -119,18 +113,20 @@ async def reclamos_por_ruc(
   ruc: str,
   factura: str = None,
   estado: str = None,
-  desde: date = None,
-  hasta: date = None,
+  desde: str = None,
+  hasta: str = None,
 ):
-  sql = f"SELECT reclamo.estado, ruc_reclamante, reclamo.no_factura, reclamo.id_reclamo, reclamo.fecha_reclamo, reclamo.fecha_factura, reclamo.fecha_reclamo, nombre_reclamante, id_detalle, reclamo.nombre_usuario, reclamo.fecha_enproceso, reclamo.fecha_finalizado, reclamo.respuesta_finalizado, reclamos FROM detalle_reclamo JOIN reclamo ON detalle_reclamo.id_reclamo = reclamo.id_reclamo  WHERE ruc_reclamante='{ruc}'"
+  sql = f"SELECT reclamo.estado, ruc_reclamante, reclamo.no_factura, reclamo.id_reclamo, reclamo.fecha_reclamo, reclamo.fecha_factura, nombre_reclamante, id_detalle, reclamo.nombre_usuario, reclamo.fecha_enproceso, reclamo.fecha_finalizado, reclamo.respuesta_finalizado, reclamos FROM detalle_reclamo JOIN reclamo ON detalle_reclamo.id_reclamo = reclamo.id_reclamo WHERE ruc_reclamante='{ruc}'"
         
-  if factura is not None:
+  if factura not in [None, '']:
     sql += f" AND reclamo.no_factura LIKE '{factura}'"
-  if estado is not None:
+  if estado not in [None, '']:
     sql += f" AND reclamo.estado LIKE '{estado}'"
-  if desde is not None and hasta is not None:
+  if desde not in [None, ''] and hasta not in [None, '']:
     sql += f" AND reclamo.fecha_reclamo BETWEEN '{desde}' AND '{hasta}'"
   sql += " ORDER BY id_reclamo"
+  
+  print('[SQL]: ', sql)
 
   try:
     with Session(engine1) as session:
@@ -152,11 +148,11 @@ async def reclamos_por_ruc(
 async def reclamos_por_estado(estado: str, factura: str = None, ruc: str = None, desde: str = None, hasta: str = None):
     sql = f"SELECT id_detalle, reclamo.id_reclamo, reclamo.fecha_reclamo, nombre_reclamante, ruc_reclamante, reclamo.no_factura, reclamo.fecha_factura, reclamo.fecha_enproceso, reclamo.fecha_finalizado, reclamo.respuesta_finalizado, reclamo.nombre_usuario, reclamos FROM detalle_reclamo JOIN reclamo ON detalle_reclamo.id_reclamo = reclamo.id_reclamo WHERE reclamo.estado LIKE '{estado}'"
 
-    if factura is not None:
+    if factura not in [None, '']:
       sql += f" AND reclamo.no_factura LIKE '{factura}'"
-    if ruc is not None:
+    if ruc not in [None, '']:
       sql += f" AND reclamo.ruc_cliente = '{ruc}'"
-    if desde is not None and hasta is not None:
+    if desde not in [None, ''] and hasta not in [None, '']:
       sql += f" AND reclamo.fecha_reclamo BETWEEN '{desde}' AND '{hasta}'"
     sql += " ORDER BY id_reclamo"
 
