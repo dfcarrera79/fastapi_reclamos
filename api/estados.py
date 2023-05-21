@@ -17,7 +17,7 @@ class EstadoModel(BaseModel):
   nombre_usuario: Optional[str]
   respuesta_finalizado: Optional[str]
 
-# Establish connections to PostgreSQL databases for "reclamos"
+# Establish connections to PostgreSQL database for "reclamos"
 db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
 engine = create_engine(db_uri)
 
@@ -39,7 +39,7 @@ async def actualizar_estado(data: EstadoModel):
 
   if estado == "PRO":
     fecha = datetime.datetime.now().isoformat()
-    sql = f"UPDATE reclamo SET estado='PRO', fecha_enproceso='{fecha}', login_usuario='{login_usuario}', nombre_usuario='{nombre_usuario}' WHERE id_reclamo='{id_reclamo}' RETURNING id_reclamo"
+    sql = f"UPDATE reclamo SET estado='PRO', fecha_enproceso='{fecha}', login_usuario='{login_usuario}', nombre_usuario='{nombre_usuario}', respuesta_finalizado='{respuesta_finalizado}' WHERE id_reclamo='{id_reclamo}' RETURNING id_reclamo"
 
   if estado == "FIN":
     fecha = datetime.datetime.now().isoformat()
