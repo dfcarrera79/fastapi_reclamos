@@ -3,9 +3,11 @@ import fastapi
 from fastapi import Request
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
+from utils import db_config
 
 # Establish connections to PostgreSQL databases for "reclamos"
-db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
+# db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
+db_uri = db_config.db_uri1
 engine = create_engine(db_uri)
 
 # API Route Definitions

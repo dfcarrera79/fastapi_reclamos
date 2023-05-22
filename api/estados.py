@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from fastapi.responses import JSONResponse
-
+from utils import db_config
 
 ## Models
 class EstadoModel(BaseModel):
@@ -18,7 +18,8 @@ class EstadoModel(BaseModel):
   respuesta_finalizado: Optional[str]
 
 # Establish connections to PostgreSQL database for "reclamos"
-db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
+# db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
+db_uri = db_config.db_uri1
 engine = create_engine(db_uri)
 
 # API Route Definitions

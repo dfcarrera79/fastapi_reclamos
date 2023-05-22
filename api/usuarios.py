@@ -3,12 +3,15 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from utils import utils
+from utils import db_config
 
 # Establish connections to PostgreSQL databases for "reclamos" and "apromed" respectively
-db_uri1 = "postgresql://postgres:01061979@localhost:5432/reclamos"
+# db_uri1 = "postgresql://postgres:01061979@localhost:5432/reclamos"
+db_uri1 = db_config.db_uri1
 engine1 = create_engine(db_uri1)
 
-db_uri2 = "postgresql://postgres:01061979@localhost:5432/apromed"
+# db_uri2 = "postgresql://postgres:01061979@localhost:5432/apromed"
+db_uri2 = db_config.db_uri2
 engine2 = create_engine(db_uri2)
 
 # API Route Definitions

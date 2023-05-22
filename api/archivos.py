@@ -8,6 +8,7 @@ from sqlalchemy import create_engine, text
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from utils import db_config
 
 ## Models
 class ArchivoModel(BaseModel):
@@ -22,7 +23,8 @@ class RegistrarModel(BaseModel):
   filepath: str
 
 # Establish connections to PostgreSQL databases for "reclamos"
-db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
+# db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
+db_uri = db_config.db_uri1
 engine = create_engine(db_uri)
 
 # API Route Definitions
