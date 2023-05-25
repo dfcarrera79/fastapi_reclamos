@@ -2,15 +2,13 @@ import fastapi
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
-from utils import utils
-from utils import db_config
+from src.utils import utils
+from src import db_config
 
 # Establish connections to PostgreSQL databases for "reclamos" and "apromed" respectively
-# db_uri1 = "postgresql://postgres:01061979@localhost:5432/reclamos"
 db_uri1 = db_config.db_uri1
 engine1 = create_engine(db_uri1)
 
-# db_uri2 = "postgresql://postgres:01061979@localhost:5432/apromed"
 db_uri2 = db_config.db_uri2
 engine2 = create_engine(db_uri2)
 
@@ -57,7 +55,8 @@ async def cliente_sistema(id: str):
   try:
     with Session(engine2) as session:
       rows = session.execute(text(sql)).fetchall()
-      if len(rows) == 0:
+      objetos = [row._asdict() for row in rows]
+      if len(objetos) == 0:
         return {
           "error": "S",
           "mensaje": f"No existe un cliente con el RUC Nro. {id} registrado en el sistema contable",
@@ -66,7 +65,7 @@ async def cliente_sistema(id: str):
         return {
           "error": "N",
           "mensaje": "",
-          "objetos": rows[0],
+          "objetos": objetos[0],
         }    
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}   
@@ -77,13 +76,14 @@ async def usuario_sistema(id: str, clave: str):
   try:
     with Session(engine2) as session:
       rows = session.execute(text(sql)).fetchall()
-      if len(rows) == 0:
+      objetos = [row._asdict() for row in rows]
+      if len(objetos) == 0:
         return {
           "error": "S",
           "mensaje": "El login ingresado no está registrado en el sistema contable",
         }
       else:
-        usuario = rows[0]
+        usuario = objetos[0]
         ok = usuario['clave'] == utils.codify(clave)
         return {
           'error': "N" if ok else "S",

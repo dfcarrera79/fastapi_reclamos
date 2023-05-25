@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, text
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from utils import db_config
+from src import db_config
 
 ## Models
 class ArchivoModel(BaseModel):
@@ -23,16 +23,22 @@ class RegistrarModel(BaseModel):
   filepath: str
 
 # Establish connections to PostgreSQL databases for "reclamos"
-# db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
 db_uri = db_config.db_uri1
 engine = create_engine(db_uri)
 
 # API Route Definitions
 router = fastapi.APIRouter()
 
+from fastapi import FastAPI, UploadFile, File
+import os
+from PIL import Image
+
+app = FastAPI()
+
+
 @router.post("/subir_archivo")
 async def subir_archivo(file: UploadFile = File(...)):
-  directorio = os.path.join(os.getcwd(), 'public', 'imagenes_reclamos')
+  directorio = os.path.join(os.getcwd(), 'src', 'public', 'imagenes_reclamos')
   try:
     os.makedirs(directorio, exist_ok=True)
     # Save the original file
@@ -66,9 +72,10 @@ async def registrar_archivo(data: RegistrarModel):
   try:
     with Session(engine) as session:
       sql = f"INSERT INTO archivo (id_detalle, path) VALUES(0, '{filepath}') returning id_archivo"
-      id_archivo = session.execute(text(sql)).fetchall()
+      rows = session.execute(text(sql)).fetchall()
       session.commit()
-      return {"error": "N", "mensaje": "", "objetos": id_archivo}
+      objetos = [row._asdict() for row in rows]
+      return {"error": "N", "mensaje": "", "objetos": objetos}  
   except Exception as e:
     return {"error": "S", "mensaje": str(e)} 
   
@@ -95,25 +102,26 @@ async def actualizar_archivos(data: ArchivosModel):
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}  
 
-@router.post("/actualizar_archivo")
-async def actualizar_archivo(data: ArchivoModel):
-  id_detalle = data.id_detalle
-  filepath = data.filepath
-  sql = f"INSERT INTO archivo (id_detalle, path) VALUES({id_detalle}, '{filepath}')"
-  try:
-    with Session(engine) as session:
-      session.execute(text(sql))
-      session.commit()
-      return {"error": "N", "mensaje": "", "objetos": []}
-  except Exception as e:
-    return {"error": "S", "mensaje": str(e)}  
+# @router.post("/actualizar_archivo")
+# async def actualizar_archivo(data: ArchivoModel):
+#   id_detalle = data.id_detalle
+#   filepath = data.filepath
+#   sql = f"INSERT INTO archivo (id_detalle, path) VALUES({id_detalle}, '{filepath}')"
+#   try:
+#     with Session(engine) as session:
+#       session.execute(text(sql))
+#       session.commit()
+#       return {"error": "N", "mensaje": "", "objetos": []}
+#   except Exception as e:
+#     return {"error": "S", "mensaje": str(e)}  
    
 @router.get("/obtener_archivos/{id_archivo}")
 async def obtener_archivos(id_archivo):
   try:
     with Session(engine) as session:
       rows = session.execute(text(f"SELECT path FROM archivo WHERE id_archivo={id_archivo}")).fetchall()
-      return {"error": "N", "mensaje": "", "objetos": rows}
+      objetos = [row._asdict() for row in rows]
+      return {"error": "N", "mensaje": "", "objetos": objetos}  
   except Exception as e:
       return {"error": "S", "mensaje": str(e)}  
     

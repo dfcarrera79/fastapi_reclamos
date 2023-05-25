@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from api import motivos, reclamos, archivos, estados, usuarios
+from src.routers import motivos, reclamos, archivos, estados, usuarios
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="public/imagenes_reclamos"), name="static")
+app.mount("/static", StaticFiles(directory="src/public/imagenes_reclamos"), name="static")
 
 # API endpoints
 app.include_router(motivos.router)

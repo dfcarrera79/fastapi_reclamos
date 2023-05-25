@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from fastapi.responses import JSONResponse
-from utils import db_config
+from src import db_config
 
 ## Models
 class EstadoModel(BaseModel):
@@ -18,7 +18,6 @@ class EstadoModel(BaseModel):
   respuesta_finalizado: Optional[str]
 
 # Establish connections to PostgreSQL database for "reclamos"
-# db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
 db_uri = db_config.db_uri1
 engine = create_engine(db_uri)
 
@@ -50,6 +49,7 @@ async def actualizar_estado(data: EstadoModel):
     with Session(engine) as session:
       rows = session.execute(text(sql)).fetchall()
       session.commit()
-      return JSONResponse({"error": "N", "mensaje": "Estado actualizado exitosamente", "objetos": rows[0][0]})
+      objetos = [row._asdict() for row in rows]
+      return {"error": "N", "mensaje": "Estado actualizado exitosamente", "objetos": objetos}  
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}  

@@ -6,14 +6,12 @@ from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine
 from sqlalchemy.sql import text 
-from utils import db_config
+from src import db_config
 
 # Establish connections to PostgreSQL databases for "reclamos" and "apromed" respectively
-# db_uri1 = "postgresql://postgres:01061979@localhost:5432/reclamos"
 db_uri1 = db_config.db_uri1
 engine1 = create_engine(db_uri1)
 
-# db_uri2 = "postgresql://postgres:01061979@localhost:5432/apromed"
 db_uri2 = db_config.db_uri2
 engine2 = create_engine(db_uri2)
 
@@ -24,26 +22,26 @@ router = fastapi.APIRouter()
 async def obtener_factura(ruc_cliente: str, numero_factura: str):
   try:
     with Session(engine2) as session:
-      rows = session.execute(text(f"SELECT TEgreso.trn_compro AS no_factura, TEgreso.trn_fecreg AS fecha_factura, TReferente.clp_cedruc AS ruc_cliente, TReferente.clp_descri AS razon_social, TReferente.clp_contacto AS nombre_comercial, TReferente.clp_calles AS direccion, TReferente.ciu_descri AS ciudad, TReferente.celular AS telefonos, TReferente.email, TEgreso.trn_codigo FROM comun.TEgreso INNER JOIN referente.TReferente ON TEgreso.clp_codigo = TReferente.clp_codigo WHERE TRIM(TReferente.clp_cedruc) LIKE '{ruc_cliente}' AND TRIM(TEgreso.trn_compro) LIKE '{numero_factura}' AND TEgreso.doc_codigo = 1 AND TEgreso.trn_valido = 0")).fetchall()
-      return {"error": "N", "mensaje": "", "objetos": rows[0]}
+      sql = f"SELECT TEgreso.trn_compro AS no_factura, TEgreso.trn_fecreg AS fecha_factura, TReferente.clp_cedruc AS ruc_cliente, TReferente.clp_descri AS razon_social, TReferente.clp_contacto AS nombre_comercial, TReferente.clp_calles AS direccion, TReferente.ciu_descri AS ciudad, TReferente.celular AS telefonos, TReferente.email, TEgreso.trn_codigo FROM comun.TEgreso INNER JOIN referente.TReferente ON TEgreso.clp_codigo = TReferente.clp_codigo WHERE TRIM(TReferente.clp_cedruc) LIKE '{ruc_cliente}' AND TRIM(TEgreso.trn_compro) LIKE '{numero_factura}' AND TEgreso.doc_codigo = 1 AND TEgreso.trn_valido = 0"
+      rows = session.execute(text(sql)).fetchall()   
+      objetos = [row._asdict() for row in rows]
+      return {"error": "N", "mensaje": "", "objetos": objetos}  
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}  
 
 @router.get("/obtener_productos") 
 async def obtener_productos(ruc_reclamante: str, no_factura: str):
   respuesta = await obtener_factura(ruc_reclamante, no_factura)
-  if respuesta["error"] == "S":
+  print('[RESPUESTA]: ', respuesta)
+  if respuesta["error"] == "S" or len(respuesta["objetos"]) == 0:
     return JSONResponse(respuesta)
   factura = respuesta['objetos']
-  sql = f"SELECT TArticulo.art_codigo, TArticulo.art_codbar, TArticulo.art_nomlar, TDetEgre.dt_cant, TDetEgre.dt_lote, TDetEgre.dt_fecha, TDetEgre.conteo_pedido FROM articulo.TArticulo INNER JOIN comun.TDetEgre ON TArticulo.art_codigo = TDetEgre.art_codigo AND TDetEgre.trn_codigo = {factura['trn_codigo']} ORDER BY TArticulo.art_nomlar"
+  sql = f"SELECT TArticulo.art_codigo, TArticulo.art_codbar, TArticulo.art_nomlar, TDetEgre.dt_cant, TDetEgre.dt_lote, TDetEgre.dt_fecha, TDetEgre.conteo_pedido FROM articulo.TArticulo INNER JOIN comun.TDetEgre ON TArticulo.art_codigo = TDetEgre.art_codigo AND TDetEgre.trn_codigo = {factura[0]['trn_codigo']} ORDER BY TArticulo.art_nomlar"
   try: 
     with Session(engine2) as session:
       rows = session.execute(text(sql)).fetchall()
-      return {
-        "error": "N",
-        "mensaje": "",
-        "objetos": rows
-      }
+      objetos = [row._asdict() for row in rows]
+      return {"error": "N", "mensaje": "", "objetos": objetos} 
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}  
   
@@ -75,7 +73,8 @@ def insertar_detalle(id_reclamo, detalle, razon_social):
         'razon_social': razon_social
       }).fetchall()
       session.commit()
-      rows_response = rows[0]
+      objetos = [row._asdict() for row in rows]
+      rows_response = objetos[0]
       return JSONResponse(content={
         "error": "N",
         "mensaje": "Reclamo agregado exitosamente",
@@ -91,15 +90,15 @@ async def crear_detalle(request: Request):
   respuesta = await obtener_factura(detalle["ruc_reclamante"], detalle["no_factura"])
   if respuesta['error'] == "S":
     return JSONResponse(content=respuesta)
-  factura = respuesta['objetos']
-
+  factura = respuesta['objetos'][0]
   sql = f"INSERT INTO reclamo (no_factura, fecha_reclamo, fecha_factura, ruc_cliente, razon_social, nombre_comercial, direccion, ciudad, telefonos, email, trn_codigo) VALUES('{factura['no_factura']}', current_timestamp, '{factura['fecha_factura']}', '{factura['ruc_cliente']}', '{factura['razon_social']}', '{factura['nombre_comercial']}', '{factura['direccion']}', '{factura['ciudad']}', '{factura['telefonos']}', '{factura['email']}', '{factura['trn_codigo']}') ON CONFLICT ON CONSTRAINT reclamo_unico DO UPDATE SET no_factura=EXCLUDED.no_factura RETURNING id_reclamo, estado, razon_social"
 
   try:
     with Session(engine1) as session:
       rows = session.execute(text(sql)).fetchall()
       session.commit()
-      rows_response = rows[0]
+      objetos = [row._asdict() for row in rows]
+      rows_response = objetos[0]
       id_reclamo, estado, razon_social = rows_response['id_reclamo'], rows_response['estado'], rows_response['razon_social']
       
       if estado == 'FIN':
@@ -127,13 +126,14 @@ async def reclamos_por_ruc(
   if estado not in [None, '']:
     sql += f" AND reclamo.estado LIKE '{estado}'"
   if desde not in [None, ''] and hasta not in [None, '']:
-    sql += f" AND reclamo.fecha_reclamo BETWEEN '{desde}' AND '{hasta}'"
+    sql += f" AND CAST(reclamo.fecha_reclamo AS DATE) BETWEEN '{desde}' AND '{hasta}'"
   sql += " ORDER BY id_reclamo"
 
   try:
     with Session(engine1) as session:
       rows = session.execute(text(sql)).fetchall()
-      detalles = rows[0]
+      objetos = [row._asdict() for row in rows]
+      detalles = objetos[0]
       if len(rows) > 0:
         reclamo = {
           "fecha_factura": detalles["fecha_factura"],
@@ -155,16 +155,14 @@ async def reclamos_por_estado(estado: str, factura: str = None, ruc: str = None,
     if ruc not in [None, '']:
       sql += f" AND reclamo.ruc_cliente = '{ruc}'"
     if desde not in [None, ''] and hasta not in [None, '']:
-      sql += f" AND reclamo.fecha_reclamo BETWEEN '{desde}' AND '{hasta}'"
+      sql += f" AND CAST(reclamo.fecha_reclamo AS DATE) BETWEEN '{desde}' AND '{hasta}'"
     sql += " ORDER BY id_reclamo"
 
     try:
       with Session(engine1) as session:
         rows = session.execute(text(sql)).fetchall()
         if len(rows) > 0:
-          reclamos = []
-          for row in rows:
-              reclamos.append(row)
+          reclamos = [row._asdict() for row in rows]
           return {"error": "N", "mensaje": "", "objetos": reclamos}
         else:
           return {"error": "N", "mensaje": "", "objetos": 0}

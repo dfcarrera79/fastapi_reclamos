@@ -3,10 +3,10 @@ import fastapi
 from fastapi import Request
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
-from utils import db_config
+from fastapi.encoders import jsonable_encoder
+from src import db_config
 
 # Establish connections to PostgreSQL databases for "reclamos"
-# db_uri = "postgresql://postgres:01061979@localhost:5432/reclamos"
 db_uri = db_config.db_uri1
 engine = create_engine(db_uri)
 
@@ -18,9 +18,11 @@ async def obtener_motivos():
   try:
     with Session(engine) as session:
       rows = session.execute(text("SELECT * FROM motivo ORDER BY nombre_motivo")).fetchall()
-      return {"error": "N", "mensaje": "", "objetos": rows}  
+      objetos = [row._asdict() for row in rows]
+      return {"error": "N", "mensaje": "", "objetos": objetos}  
   except Exception as e:
-      return {"error": "S", "mensaje": str(e)}  
+      return {"error": "S", "mensaje": str(e)}
+
 
 @router.delete("/eliminar_motivo/{id_motivo}")
 async def eliminar_motivo(id_motivo: int):
@@ -42,6 +44,7 @@ async def crear_motivo(request: Request):
       sql = f"INSERT INTO motivo (nombre_motivo) VALUES('{motivo['nombre_motivo']}') RETURNING id_motivo" if motivo['id_motivo'] == 0 else f"UPDATE motivo SET nombre_motivo='{motivo['nombre_motivo']}' WHERE id_motivo='{motivo['id_motivo']}' RETURNING id_motivo"
       rows = session.execute(text(sql)).fetchall()
       session.commit()
-      return {"error": "N", "mensaje": "", "objetos": rows}
+      objetos = [row._asdict() for row in rows]
+      return {"error": "N", "mensaje": "", "objetos": objetos}  
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}
