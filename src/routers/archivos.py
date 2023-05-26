@@ -1,14 +1,16 @@
 import os
 import shutil
+import random
+import string
 import fastapi
 from PIL import Image
-from fastapi import File, UploadFile
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, text
-from pydantic import BaseModel
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 from src import db_config
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from fastapi.responses import JSONResponse
+from sqlalchemy import create_engine, text
+from fastapi import FastAPI, UploadFile, File
+from fastapi.encoders import jsonable_encoder
 
 ## Models
 class ArchivoModel(BaseModel):
@@ -27,44 +29,49 @@ db_uri = db_config.db_uri1
 engine = create_engine(db_uri)
 
 # API Route Definitions
+app = FastAPI()
 router = fastapi.APIRouter()
 
-from fastapi import FastAPI, UploadFile, File
-import os
-from PIL import Image
-
-app = FastAPI()
-
+def generate_random_filename():
+  # Generate a random string of letters and digits
+  letters_digits = string.ascii_letters + string.digits
+  random_filename = ''.join(random.choice(letters_digits) for _ in range(10))
+  return random_filename
 
 @router.post("/subir_archivo")
 async def subir_archivo(file: UploadFile = File(...)):
   directorio = os.path.join(os.getcwd(), 'src', 'public', 'imagenes_reclamos')
   try:
     os.makedirs(directorio, exist_ok=True)
-    # Save the original file
-    with open(os.path.join(directorio, file.filename), "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
+    
+    # Generate a random filename
+    random_filename = generate_random_filename()
+    file_extension = os.path.splitext(file.filename)[1]
+    random_filename_with_extension = random_filename + file_extension
+    
+    # Save the file with the random filename
+    file_path = os.path.join(directorio, random_filename_with_extension)
+    with open(file_path, "wb") as buffer:
+      shutil.copyfileobj(file.file, buffer)
+    
     # Convert the image to WebP format
-    image_path = os.path.join(directorio, file.filename)
-    image = Image.open(image_path)
-    webp_path = os.path.splitext(image_path)[0] + ".webp"
+    image = Image.open(file_path)
+    webp_path = os.path.splitext(file_path)[0] + ".webp"
     image.save(webp_path, "WebP")
     
     # Delete the original image
-    os.remove(image_path)
+    os.remove(file_path)
     
     # Concatenate directory and filename
     directory = os.path.join(directorio, os.path.basename(webp_path))
 
     return JSONResponse({
-            "error": "N",
-            "mensaje": "File uploaded and converted to WebP format successfully",
-            "objetos": directory
-        })
+        "error": "N",
+        "mensaje": "File uploaded and converted to WebP format successfully",
+        "objetos": directory
+    })
   except Exception as e:
     return JSONResponse({"error": "S", "mensaje": str(e)})
-
 
 @router.post("/registrar_archivo")
 async def registrar_archivo(data: RegistrarModel):
@@ -102,6 +109,47 @@ async def actualizar_archivos(data: ArchivosModel):
   except Exception as e:
     return {"error": "S", "mensaje": str(e)}  
 
+@router.get("/obtener_archivos/{id_archivo}")
+async def obtener_archivos(id_archivo):
+  try:
+    with Session(engine) as session:
+      rows = session.execute(text(f"SELECT path FROM archivo WHERE id_archivo={id_archivo}")).fetchall()
+      objetos = [row._asdict() for row in rows]
+      return {"error": "N", "mensaje": "", "objetos": objetos}  
+  except Exception as e:
+      return {"error": "S", "mensaje": str(e)}  
+    
+
+# @router.post("/subir_archivo")
+# async def subir_archivo(file: UploadFile = File(...)):
+#   directorio = os.path.join(os.getcwd(), 'src', 'public', 'imagenes_reclamos')
+#   try:
+#     os.makedirs(directorio, exist_ok=True)
+#     # Save the original file
+#     with open(os.path.join(directorio, file.filename), "wb") as buffer:
+#       shutil.copyfileobj(file.file, buffer)
+
+#     # Convert the image to WebP format
+#     image_path = os.path.join(directorio, file.filename)
+#     image = Image.open(image_path)
+#     webp_path = os.path.splitext(image_path)[0] + ".webp"
+#     image.save(webp_path, "WebP")
+    
+#     # Delete the original image
+#     os.remove(image_path)
+    
+#     # Concatenate directory and filename
+#     directory = os.path.join(directorio, os.path.basename(webp_path))
+
+#     return JSONResponse({
+#             "error": "N",
+#             "mensaje": "File uploaded and converted to WebP format successfully",
+#             "objetos": directory
+#         })
+#   except Exception as e:
+#     return JSONResponse({"error": "S", "mensaje": str(e)})    
+    
+    
 # @router.post("/actualizar_archivo")
 # async def actualizar_archivo(data: ArchivoModel):
 #   id_detalle = data.id_detalle
@@ -113,15 +161,4 @@ async def actualizar_archivos(data: ArchivosModel):
 #       session.commit()
 #       return {"error": "N", "mensaje": "", "objetos": []}
 #   except Exception as e:
-#     return {"error": "S", "mensaje": str(e)}  
-   
-@router.get("/obtener_archivos/{id_archivo}")
-async def obtener_archivos(id_archivo):
-  try:
-    with Session(engine) as session:
-      rows = session.execute(text(f"SELECT path FROM archivo WHERE id_archivo={id_archivo}")).fetchall()
-      objetos = [row._asdict() for row in rows]
-      return {"error": "N", "mensaje": "", "objetos": objetos}  
-  except Exception as e:
-      return {"error": "S", "mensaje": str(e)}  
-    
+#     return {"error": "S", "mensaje": str(e)}      
