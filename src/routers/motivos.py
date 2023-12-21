@@ -4,7 +4,7 @@ from fastapi import Request
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from fastapi.encoders import jsonable_encoder
-from src import db_config
+import db_config
 
 # Establish connections to PostgreSQL databases for "reclamos"
 db_uri = db_config.db_uri1

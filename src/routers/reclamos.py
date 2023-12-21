@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine
 from sqlalchemy.sql import text 
-from src import db_config
+import db_config
 
 # Establish connections to PostgreSQL databases for "reclamos" and "apromed" respectively
 db_uri1 = db_config.db_uri1

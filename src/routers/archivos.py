@@ -4,7 +4,7 @@ import random
 import string
 import fastapi
 from PIL import Image
-from src import db_config
+import db_config
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse

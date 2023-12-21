@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 from fastapi.responses import JSONResponse
-from src import db_config
+import db_config
 
 ## Models
 class EstadoModel(BaseModel):
