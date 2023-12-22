@@ -4,7 +4,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from routers import motivos, reclamos, archivos, estados, usuarios
 
-app = FastAPI()
+app = FastAPI(
+    title="Reclamos API",
+    description="Backend para la aplicación de reclamos de LoxaSoluciones",
+    version="1.0.0",
+    contact={
+        "name": "Diego Carrera",
+        "url": "http://loxasoluciones.com/",
+        "email": "dfcarrera@outlook.com",
+    }
+)
 app.mount("/static", StaticFiles(directory="src/public/imagenes_reclamos"), name="static")
 
 # API endpoints

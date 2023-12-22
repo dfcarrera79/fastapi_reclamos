@@ -20,6 +20,6 @@ COPY src ./src
 # Expose the FastAPI port
 EXPOSE 8000
 
-# Set the default command for the container
+# Set the default command for the container 
 CMD ["poetry", "run", "python", "src/main.py"]
 
