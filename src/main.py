@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from routers import motivos, reclamos, archivos, estados, usuarios
+from src.routers import motivos, reclamos, archivos, estados, usuarios
 
 app = FastAPI(
     title="Reclamos API",
